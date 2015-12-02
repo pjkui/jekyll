@@ -1,8 +1,6 @@
 ---
 layout: docs
 title: Assets
-prev_section: datafiles
-next_section: migrations
 permalink: /docs/assets/
 ---
 
@@ -75,7 +73,7 @@ You may also specify the output style with the `style` option in your
 
 {% highlight yaml %}
 sass:
-    style: :compressed
+    style: compressed
 {% endhighlight %}
 
 These are passed to Sass, so any output style options Sass supports are valid

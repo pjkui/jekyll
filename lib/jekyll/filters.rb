@@ -1,19 +1,9 @@
 require 'uri'
 require 'json'
+require 'date'
 
 module Jekyll
   module Filters
-    # Convert a Textile string into HTML output.
-    #
-    # input - The Textile String to convert.
-    #
-    # Returns the HTML formatted String.
-    def textilize(input)
-      site = @context.registers[:site]
-      converter = site.getConverterImpl(Jekyll::Converters::Textile)
-      converter.convert(input)
-    end
-
     # Convert a Markdown string into HTML output.
     #
     # input - The Markdown String to convert.
@@ -21,7 +11,7 @@ module Jekyll
     # Returns the HTML formatted String.
     def markdownify(input)
       site = @context.registers[:site]
-      converter = site.getConverterImpl(Jekyll::Converters::Markdown)
+      converter = site.find_converter_instance(Jekyll::Converters::Markdown)
       converter.convert(input)
     end
 
@@ -32,7 +22,7 @@ module Jekyll
     # Returns the CSS formatted String.
     def sassify(input)
       site = @context.registers[:site]
-      converter = site.getConverterImpl(Jekyll::Converters::Sass)
+      converter = site.find_converter_instance(Jekyll::Converters::Sass)
       converter.convert(input)
     end
 
@@ -43,19 +33,19 @@ module Jekyll
     # Returns the CSS formatted String.
     def scssify(input)
       site = @context.registers[:site]
-      converter = site.getConverterImpl(Jekyll::Converters::Scss)
+      converter = site.find_converter_instance(Jekyll::Converters::Scss)
       converter.convert(input)
     end
 
     # Slugify a filename or title.
     #
     # input - The filename or title to slugify.
+    # mode - how string is slugified
     #
-    # Returns the given filename or title as a lowercase String, with every
-    # sequence of spaces and non-alphanumeric characters replaced with a
-    # hyphen.
-    def slugify(input)
-      Utils.slugify(input)
+    # Returns the given filename or title as a lowercase URL String.
+    # See Utils.slugify for more detail.
+    def slugify(input, mode=nil)
+      Utils.slugify(input, mode)
     end
 
     # Format a date in short format e.g. "27 Jan 2011".
@@ -221,7 +211,7 @@ module Jekyll
     def where(input, property, value)
       return input unless input.is_a?(Enumerable)
       input = input.values if input.is_a?(Hash)
-      input.select { |object| item_property(object, property) == value }
+      input.select { |object| item_property(object, property).to_s == value.to_s }
     end
 
     # Sort an array of objects
@@ -232,6 +222,9 @@ module Jekyll
     #
     # Returns the filtered array of objects
     def sort(input, property = nil, nils = "first")
+      if input.nil?
+          raise ArgumentError.new("Cannot sort a null object.")
+      end
       if property.nil?
         input.sort
       else
@@ -302,6 +295,8 @@ module Jekyll
       case input
       when Time
         input
+      when Date
+        input.to_time
       when String
         Time.parse(input) rescue Time.at(input.to_i)
       when Numeric
@@ -309,7 +304,7 @@ module Jekyll
       else
         Jekyll.logger.error "Invalid Date:", "'#{input}' is not a valid datetime."
         exit(1)
-      end
+      end.localtime
     end
 
     def groupable?(element)

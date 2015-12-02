@@ -1,6 +1,6 @@
 require 'helper'
 
-class TestFrontMatterDefaults < Test::Unit::TestCase
+class TestFrontMatterDefaults < JekyllUnitTest
 
   context "A site with full front matter defaults" do
     setup do
@@ -23,6 +23,32 @@ class TestFrontMatterDefaults < Test::Unit::TestCase
     end
 
     should "affect only the specified path and type" do
+      assert_equal @affected.data["key"], "val"
+      assert_equal @not_affected.data["key"], nil
+    end
+  end
+
+  context "A site with front matter type pages and an extension" do
+    setup do
+      @site = Site.new(Jekyll.configuration({
+        "source"      => source_dir,
+        "destination" => dest_dir,
+        "defaults" => [{
+          "scope" => {
+            "path" => "index.html"
+          },
+          "values" => {
+            "key" => "val"
+          }
+        }]
+      }))
+
+      @site.process
+      @affected = @site.pages.find { |page| page.relative_path == "index.html" }
+      @not_affected = @site.pages.find { |page| page.relative_path == "about.html" }
+    end
+
+    should "affect only the specified path" do
       assert_equal @affected.data["key"], "val"
       assert_equal @not_affected.data["key"], nil
     end

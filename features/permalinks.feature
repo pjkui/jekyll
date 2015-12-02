@@ -39,7 +39,7 @@ Feature: Fancy permalinks
     And I have the following post:
       | title                   | category | date       | content         |
       | Custom Permalink Schema | stuff    | 2009-03-27 | Totally custom. |
-    And I have a configuration file with "permalink" set to "/blog/:year/:month/:day/:title"
+    And I have a configuration file with "permalink" set to "/blog/:year/:month/:day/:title/"
     When I run jekyll build
     Then the _site directory should exist
     And I should see "Totally custom." in "_site/blog/2009/03/27/custom-permalink-schema/index.html"
@@ -64,11 +64,24 @@ Feature: Fancy permalinks
     Then the _site directory should exist
     And I should see "Totally custom." in "_site/03-27-2009/custom-permalink-schema.html"
 
+  Scenario: Use custom permalink schema with date and time
+    Given I have a _posts directory
+    And I have the following post:
+      | title                   | category | date                | content         |
+      | Custom Permalink Schema | stuff    | 2009-03-27 22:31:07 | Totally custom. |
+    And I have a configuration file with:
+      | key         | value              |
+      | permalink   | "/:year:month:day:hour:minute:second.html" |
+      | timezone    | UTC                |
+    When I run jekyll build
+    Then the _site directory should exist
+    And I should see "Totally custom." in "_site/20090327223107.html"
+
   Scenario: Use per-post permalink
     Given I have a _posts directory
     And I have the following post:
       | title     | date       | permalink       | content |
-      | Some post | 2013-04-14 | /custom/posts/1 | bla bla |
+      | Some post | 2013-04-14 | /custom/posts/1/ | bla bla |
     When I run jekyll build
     Then the _site directory should exist
     And the _site/custom/posts/1 directory should exist
@@ -83,13 +96,3 @@ Feature: Fancy permalinks
     Then the _site directory should exist
     And the _site/custom/posts directory should exist
     And I should see "bla bla" in "_site/custom/posts/some.html"
-
-  Scenario: Use per-post ending in .htm
-    Given I have a _posts directory
-    And I have the following post:
-      | title     | date       | permalink               | content |
-      | Some post | 2013-04-14 | /custom/posts/some.htm  | bla bla |
-    When I run jekyll build
-    Then the _site directory should exist
-    And the _site/custom/posts directory should exist
-    And I should see "bla bla" in "_site/custom/posts/some.htm"

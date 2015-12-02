@@ -21,6 +21,7 @@ require 'time'
 require 'English'
 require 'pathname'
 require 'logger'
+require 'set'
 
 # 3rd party
 require 'safe_yaml/load'
@@ -29,6 +30,7 @@ require 'kramdown'
 require 'colorator'
 
 SafeYAML::OPTIONS[:suppress_warnings] = true
+Liquid::Template.error_mode = :strict
 
 module Jekyll
 
@@ -43,17 +45,28 @@ module Jekyll
   autoload :EntryFilter,         'jekyll/entry_filter'
   autoload :Errors,              'jekyll/errors'
   autoload :Excerpt,             'jekyll/excerpt'
+  autoload :External,            'jekyll/external'
   autoload :Filters,             'jekyll/filters'
   autoload :FrontmatterDefaults, 'jekyll/frontmatter_defaults'
+  autoload :Hooks,               'jekyll/hooks'
   autoload :Layout,              'jekyll/layout'
-  autoload :LayoutReader,        'jekyll/layout_reader'
+  autoload :CollectionReader,    'jekyll/readers/collection_reader'
+  autoload :DataReader,          'jekyll/readers/data_reader'
+  autoload :LayoutReader,        'jekyll/readers/layout_reader'
+  autoload :DraftReader,         'jekyll/readers/draft_reader'
+  autoload :PostReader,          'jekyll/readers/post_reader'
+  autoload :PageReader,          'jekyll/readers/page_reader'
+  autoload :StaticFileReader,    'jekyll/readers/static_file_reader'
   autoload :LogAdapter,          'jekyll/log_adapter'
   autoload :Page,                'jekyll/page'
   autoload :PluginManager,       'jekyll/plugin_manager'
   autoload :Post,                'jekyll/post'
   autoload :Publisher,           'jekyll/publisher'
+  autoload :Reader,              'jekyll/reader'
+  autoload :Regenerator,         'jekyll/regenerator'
   autoload :RelatedPosts,        'jekyll/related_posts'
   autoload :Renderer,            'jekyll/renderer'
+  autoload :LiquidRenderer,      'jekyll/liquid_renderer'
   autoload :Site,                'jekyll/site'
   autoload :StaticFile,          'jekyll/static_file'
   autoload :Stevenson,           'jekyll/stevenson'
@@ -153,6 +166,9 @@ module Jekyll
       end
     end
 
+    # Conditional optimizations
+    Jekyll::External.require_if_present('liquid-c')
+
   end
 end
 
@@ -162,11 +178,4 @@ require_all 'jekyll/converters/markdown'
 require_all 'jekyll/generators'
 require_all 'jekyll/tags'
 
-# Eventually remove these for 3.0 as non-core
-Jekyll::Deprecator.gracefully_require(%w[
-  toml
-  jekyll-paginate
-  jekyll-gist
-  jekyll-coffeescript
-  jekyll-sass-converter
-])
+require 'jekyll-sass-converter'

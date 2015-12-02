@@ -168,12 +168,12 @@ module Jekyll
       end.compact
     end
 
-    # Sanitizes the given path by removing a leading and addding a trailing slash
+    # Sanitizes the given path by removing a leading and adding a trailing slash
     def sanitize_path(path)
       if path.nil? || path.empty?
         ""
       else
-        path.gsub(/\A\//, '').gsub(/([^\/])\z/, '\1/')
+        path.gsub(/\A\//, '').gsub(/([^\/])\z/, '\1')
       end
     end
   end

@@ -1,8 +1,16 @@
 require 'fileutils'
 require 'posix-spawn'
-require 'rr'
-require 'test/unit'
+require 'minitest/spec'
 require 'time'
+
+class MinitestWorld
+  extend Minitest::Assertions
+  attr_accessor :assertions
+
+  def initialize
+    self.assertions = 0
+  end
+end
 
 JEKYLL_SOURCE_DIR = File.dirname(File.dirname(File.dirname(__FILE__)))
 TEST_DIR    = File.expand_path(File.join('..', '..', 'tmp', 'jekyll'), File.dirname(__FILE__))
@@ -11,6 +19,17 @@ JEKYLL_COMMAND_OUTPUT_FILE = File.join(File.dirname(TEST_DIR), 'jekyll_output.tx
 
 def source_dir(*files)
   File.join(TEST_DIR, *files)
+end
+
+def all_steps_to_path(path)
+  source = Pathname.new(source_dir('_site')).expand_path
+  dest   = Pathname.new(path).expand_path
+  paths  = []
+  dest.ascend do |f|
+    break if f.eql? source
+    paths.unshift f.to_s
+  end
+  paths
 end
 
 def jekyll_output_file

@@ -35,6 +35,8 @@ module Jekyll
       data.default_proc = proc do |hash, key|
         site.frontmatter_defaults.find(File.join(dir, name), type, key)
       end
+
+      Jekyll::Hooks.trigger :page, :post_init, self
     end
 
     # The generated directory into which the page will be placed
@@ -52,27 +54,19 @@ module Jekyll
     # Returns the String permalink or nil if none has been set.
     def permalink
       return nil if data.nil? || data['permalink'].nil?
-      if site.config['relative_permalinks']
-        File.join(@dir, data['permalink'])
-      else
-        data['permalink']
-      end
+      data['permalink']
     end
 
     # The template of the permalink.
     #
     # Returns the template String.
     def template
-      if site.permalink_style == :pretty
-        if index? && html?
-          "/:path/"
-        elsif html?
-          "/:path/:basename/"
-        else
-          "/:path/:basename:output_ext"
-        end
-      else
+      if !html?
         "/:path/:basename:output_ext"
+      elsif index?
+        "/:path/"
+      else
+        Utils.add_permalink_suffix("/:path/:basename", site.permalink_style)
       end
     end
 
@@ -141,7 +135,8 @@ module Jekyll
     # Returns the destination file path String.
     def destination(dest)
       path = site.in_dest_dir(dest, URL.unescape_path(url))
-      path = File.join(path, "index.html") if url =~ /\/$/
+      path = File.join(path, "index.html") if url.end_with?("/")
+      path << output_ext unless path.end_with?(output_ext)
       path
     end
 
@@ -158,10 +153,6 @@ module Jekyll
     # Returns the Boolean of whether this Page is an index file or not.
     def index?
       basename == 'index'
-    end
-
-    def uses_relative_permalinks
-      permalink && !@dir.empty? && site.config['relative_permalinks']
     end
   end
 end

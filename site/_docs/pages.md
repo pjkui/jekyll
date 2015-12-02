@@ -1,14 +1,12 @@
 ---
 layout: docs
 title: Creating pages
-prev_section: drafts
-next_section: variables
 permalink: /docs/pages/
 ---
 
-In addition to [writing posts](../posts/), another thing you may want to do with
-your Jekyll site is create static pages. By taking advantage of the way Jekyll
-copies files and directories, this is easy to do.
+In addition to [writing posts](../posts/), another thing you may want to do
+with your Jekyll site is create static pages. By taking advantage of the way
+Jekyll copies files and directories, this is easy to do.
 
 ## Homepage
 
@@ -33,8 +31,8 @@ Where you put HTML files for pages depends on how you want the pages to work.
 There are two main ways of creating pages:
 
 - Place named HTML files for each page in your site's root folder.
-- Create a folder in the site's root for each page, and place an index.html file
-  in each page folder.
+- Create a folder in the site's root for each page, and place an index.html
+file in each page folder.
 
 Both methods work fine (and can be used in conjunction with each other),
 with the only real difference being the resulting URLs.
@@ -60,13 +58,13 @@ and associated URLs might look like:
 
 ### Named folders containing index HTML files
 
-There is nothing wrong with the above method, however some people like to keep
+There is nothing wrong with the above method. However, some people like to keep
 their URLs free from things like filename extensions. To achieve clean URLs for
 pages using Jekyll, you simply need to create a folder for each top-level page
 you want, and then place an `index.html` file in each page’s folder. This way
-the page URL ends up being the folder name, and the web server will serve up the
-respective `index.html` file. Here's an example of what this structure might
-look like:
+the page URL ends up being the folder name, and the web server will serve up
+the respective `index.html` file. Here's an example of what this structure
+might look like:
 
 {% highlight bash %}
 .

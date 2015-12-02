@@ -23,6 +23,8 @@ module Jekyll
     ATTRIBUTES_FOR_LIQUID = EXCERPT_ATTRIBUTES_FOR_LIQUID + %w[
       content
       excerpt
+      excerpt_separator
+      draft?
     ]
 
     # Post name validator. Post filenames must be like:
@@ -52,12 +54,12 @@ module Jekyll
       @base = containing_dir(dir)
       @name = name
 
-      self.categories = dir.downcase.split('/').reject { |x| x.empty? }
+      self.categories = dir.split('/').reject { |x| x.empty? }
       process(name)
       read_yaml(@base, name)
 
       data.default_proc = proc do |hash, key|
-        site.frontmatter_defaults.find(File.join(dir, name), type, key)
+        site.frontmatter_defaults.find(relative_path, type, key)
       end
 
       if data.key?('date')
@@ -66,6 +68,8 @@ module Jekyll
 
       populate_categories
       populate_tags
+
+      Jekyll::Hooks.trigger :post, :post_init, self
     end
 
     def published?
@@ -80,7 +84,7 @@ module Jekyll
       categories_from_data = Utils.pluralized_array_from_hash(data, 'category', 'categories')
       self.categories = (
         Array(categories) + categories_from_data
-      ).map {|c| c.to_s.downcase}.flatten.uniq
+      ).map { |c| c.to_s }.flatten.uniq
     end
 
     def populate_tags
@@ -116,6 +120,14 @@ module Jekyll
     # Returns the post title
     def title
       data.fetch('title') { titleized_slug }
+    end
+
+    # Public: the Post excerpt_separator, from the YAML Front-Matter or site default
+    #         excerpt_separator value
+    #
+    # Returns the post excerpt_separator
+    def excerpt_separator
+      (data['excerpt_separator'] || site.config['excerpt_separator']).to_s
     end
 
     # Turns the post slug into a suitable title
@@ -215,10 +227,13 @@ module Jekyll
         :year        => date.strftime("%Y"),
         :month       => date.strftime("%m"),
         :day         => date.strftime("%d"),
+        :hour        => date.strftime("%H"),
+        :minute      => date.strftime("%M"),
+        :second      => date.strftime("%S"),
         :title       => slug,
         :i_day       => date.strftime("%-d"),
         :i_month     => date.strftime("%-m"),
-        :categories  => (categories || []).map { |c| c.to_s }.join('/'),
+        :categories  => (categories || []).map { |c| c.to_s.downcase }.uniq.join('/'),
         :short_month => date.strftime("%b"),
         :short_year  => date.strftime("%y"),
         :y_day       => date.strftime("%j"),
@@ -269,7 +284,8 @@ module Jekyll
     def destination(dest)
       # The url needs to be unescaped in order to preserve the correct filename
       path = site.in_dest_dir(dest, URL.unescape_path(url))
-      path = File.join(path, "index.html") if path[/\.html?$/].nil?
+      path = File.join(path, "index.html") if self.url.end_with?("/")
+      path << output_ext unless path.end_with?(output_ext)
       path
     end
 
@@ -296,6 +312,11 @@ module Jekyll
       end
     end
 
+    # Returns if this Post is a Draft
+    def draft?
+      is_a?(Jekyll::Draft)
+    end
+
     protected
 
     def extract_excerpt
@@ -307,7 +328,7 @@ module Jekyll
     end
 
     def generate_excerpt?
-      !(site.config['excerpt_separator'].to_s.empty?)
+      !excerpt_separator.empty?
     end
   end
 end

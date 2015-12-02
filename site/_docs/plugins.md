@@ -1,8 +1,6 @@
 ---
 layout: docs
 title: Plugins
-prev_section: pagination
-next_section: extras
 permalink: /docs/plugins/
 ---
 
@@ -13,8 +11,8 @@ having to modify the Jekyll source itself.
 <div class="note info">
   <h5>Plugins on GitHub Pages</h5>
   <p>
-    <a href="http://pages.github.com/">GitHub Pages</a> is powered by Jekyll,
-    however all Pages sites are generated using the <code>--safe</code> option
+    <a href="http://pages.github.com/">GitHub Pages</a> is powered by Jekyll.
+    However, all Pages sites are generated using the <code>--safe</code> option
     to disable custom plugins for security reasons. Unfortunately, this means
     your plugins won’t work if you’re deploying to GitHub Pages.<br><br>
     You can still use GitHub Pages to publish your site, but you’ll need to
@@ -27,37 +25,47 @@ having to modify the Jekyll source itself.
 
 You have 3 options for installing plugins:
 
-1. In your site source root, make a `_plugins` directory. Place your plugins here.
-    Any file ending in `*.rb` inside this directory will be loaded before Jekyll
-    generates your site.
-2. In your `_config.yml` file, add a new array with the key `gems` and the values
-    of the gem names of the plugins you'd like to use. An example:
+1. In your site source root, make a `_plugins` directory. Place your plugins
+here. Any file ending in `*.rb` inside this directory will be loaded before
+Jekyll generates your site.
+2. In your `_config.yml` file, add a new array with the key `gems` and the
+values of the gem names of the plugins you'd like to use. An example:
+
 
         gems: [jekyll-test-plugin, jekyll-jsonify, jekyll-assets]
         # This will require each of these gems automatically.
+
+    Then install your plugins using `gem install jekyll-test-plugin jekyll-jsonify jekyll-assets`
+
 3. Add the relevant plugins to a Bundler group in your `Gemfile`. An
     example:
 
         group :jekyll_plugins do
           gem "my-jekyll-plugin"
+          gem "another-jekyll-plugin"
         end
+
+    Now you need to install all plugins from your Bundler group by running single command `bundle install`
+
 
 <div class="note info">
   <h5>
-    <code>_plugins</code> and <code>gems</code>
+    <code>_plugins</code>, <code>_config.yml</code> and <code>Gemfile</code>
     can be used simultaneously
   </h5>
   <p>
-    You may use both of the aforementioned plugin options simultaneously in the
-    same site if you so choose. Use of one does not restrict the use of the other
+    You may use any of the aforementioned plugin options simultaneously in the
+    same site if you so choose. Use of one does not restrict the use of the
+    others.
   </p>
 </div>
 
-In general, plugins you make will fall into one of three categories:
+In general, plugins you make will fall into one of four categories:
 
-1. Generators
-2. Converters
-3. Tags
+1. [Generators](#generators)
+2. [Converters](#converters)
+3. [Commands](#commands)
+4. [Tags](#tags)
 
 ## Generators
 
@@ -66,11 +74,8 @@ based on your own rules.
 
 A generator is a subclass of `Jekyll::Generator` that defines a `generate`
 method, which receives an instance of
-[`Jekyll::Site`]({{ site.repository }}/blob/master/lib/jekyll/site.rb).
-
-Generation is triggered for its side-effects, the return value of `generate` is
-ignored. Jekyll does not assume any particular side-effect to happen, it just
-runs the method.
+[`Jekyll::Site`]({{ site.repository }}/blob/master/lib/jekyll/site.rb). The
+return value of `generate` is ignored.
 
 Generators run after Jekyll has made an inventory of the existing content, and
 before the site is generated. Pages with YAML Front Matters are stored as
@@ -168,8 +173,9 @@ Generators are only required to implement one method:
 ## Converters
 
 If you have a new markup language you’d like to use with your site, you can
-include it by implementing your own converter. Both the Markdown and Textile
-markup languages are implemented using this method.
+include it by implementing your own converter. Both the Markdown and
+[Textile](https://github.com/jekyll/jekyll-textile-converter) markup
+languages are implemented using this method.
 
 <div class="note info">
   <h5>Remember your YAML Front Matter</h5>
@@ -253,7 +259,7 @@ In our example, `UpcaseConverter#matches` checks if our filename extension is
 simply uppercasing the entire content string. Finally, when it saves the page,
 it will do so with a `.html` extension.
 
-## Command
+## Commands
 
 As of version 2.5.0, Jekyll can be extended with plugins which provide
 subcommands for the `jekyll` executable. This is possible by including the
@@ -276,7 +282,7 @@ class MyNewCommand < Jekyll::Command
         c.syntax "new [options]"
         c.description 'Create a new Jekyll site.'
 
-        c.option 'dest', '-d DEST, 'Where the site should go.'
+        c.option 'dest', '-d DEST', 'Where the site should go.'
 
         c.action do |args, options|
           Jekyll::Site.new_site_at(options['dest'])
@@ -386,10 +392,10 @@ And we would get something like this on the page:
 
 ### Liquid filters
 
-You can add your own filters to the Liquid template system much like you can add
-tags above. Filters are simply modules that export their methods to liquid. All
-methods will have to take at least one parameter which represents the input of
-the filter. The return value will be the output of the filter.
+You can add your own filters to the Liquid template system much like you can
+add tags above. Filters are simply modules that export their methods to liquid.
+All methods will have to take at least one parameter which represents the input
+of the filter. The return value will be the output of the filter.
 
 {% highlight ruby %}
 module Jekyll
@@ -472,6 +478,220 @@ module Jekyll
 end
 {% endhighlight %}
 
+## Hooks
+
+<div class="note unreleased">
+  <h5>Support for hooks is currently unreleased.</h5>
+  <p>
+    In order to use this feature, <a href="/docs/installation/#pre-releases">
+    install the latest development version of Jekyll</a>.
+  </p>
+</div>
+
+Using hooks, your plugin can exercise fine-grained control over various aspects
+of the build process. If your plugin defines any hooks, Jekyll will call them
+at pre-defined points.
+
+Hooks are registered to a container and an event name. To register one, you
+call Jekyll::Hooks.register, and pass the container, event name, and code to
+call whenever the hook is triggered. For example, if you want to execute some
+custom functionality every time Jekyll renders a post, you could register a
+hook like this:
+
+{% highlight ruby %}
+Jekyll::Hooks.register :post, :post_render do |post|
+  # code to call after Jekyll renders a post
+end
+{% endhighlight %}
+
+Jekyll provides hooks for <code>:site</code>, <code>:page</code>,
+<code>:post</code>, and <code>:document</code>. In all cases, Jekyll calls your
+hooks with the container object as the first callback parameter. But in the
+case of <code>:pre_render</code>, your hook will also receive a payload hash as
+a second parameter which allows you full control over the variables that are
+available while rendering.
+
+The complete list of available hooks is below:
+
+<div class="mobile-side-scroller">
+<table>
+  <thead>
+    <tr>
+      <th>Container</th>
+      <th>Event</th>
+      <th>Called</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <p><code>:site</code></p>
+      </td>
+      <td>
+        <p><code>:after_reset</code></p>
+      </td>
+      <td>
+        <p>Just after site reset</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:site</code></p>
+      </td>
+      <td>
+        <p><code>:pre_render</code></p>
+      </td>
+      <td>
+        <p>Just before rendering the whole site</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:site</code></p>
+      </td>
+      <td>
+        <p><code>:post_render</code></p>
+      </td>
+      <td>
+        <p>After rendering the whole site, but before writing any files</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:site</code></p>
+      </td>
+      <td>
+        <p><code>:post_write</code></p>
+      </td>
+      <td>
+        <p>After writing the whole site to disk</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:page</code></p>
+      </td>
+      <td>
+        <p><code>:post_init</code></p>
+      </td>
+      <td>
+        <p>Whenever a page is initialized</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:page</code></p>
+      </td>
+      <td>
+        <p><code>:pre_render</code></p>
+      </td>
+      <td>
+        <p>Just before rendering a page</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:page</code></p>
+      </td>
+      <td>
+        <p><code>:post_render</code></p>
+      </td>
+      <td>
+        <p>After rendering a page, but before writing it to disk</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:page</code></p>
+      </td>
+      <td>
+        <p><code>:post_write</code></p>
+      </td>
+      <td>
+        <p>After writing a page to disk</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:post</code></p>
+      </td>
+      <td>
+        <p><code>:post_init</code></p>
+      </td>
+      <td>
+        <p>Whenever a post is initialized</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:post</code></p>
+      </td>
+      <td>
+        <p><code>:pre_render</code></p>
+      </td>
+      <td>
+        <p>Just before rendering a post</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:post</code></p>
+      </td>
+      <td>
+        <p><code>:post_render</code></p>
+      </td>
+      <td>
+        <p>After rendering a post, but before writing it to disk</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:post</code></p>
+      </td>
+      <td>
+        <p><code>:post_write</code></p>
+      </td>
+      <td>
+        <p>After writing a post to disk</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:document</code></p>
+      </td>
+      <td>
+        <p><code>:pre_render</code></p>
+      </td>
+      <td>
+        <p>Just before rendering a document</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:document</code></p>
+      </td>
+      <td>
+        <p><code>:post_render</code></p>
+      </td>
+      <td>
+        <p>After rendering a document, but before writing it to disk</p>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <p><code>:document</code></p>
+      </td>
+      <td>
+        <p><code>:post_write</code></p>
+      </td>
+      <td>
+        <p>After writing a document to disk</p>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
 ## Available Plugins
 
 You can find a few useful plugins at the following locations:
@@ -479,7 +699,8 @@ You can find a few useful plugins at the following locations:
 #### Generators
 
 - [ArchiveGenerator by Ilkka Laukkanen](https://gist.github.com/707909): Uses [this archive page](https://gist.github.com/707020) to generate archives.
-- [LESS.js Generator by Andy Fowler](https://gist.github.com/642739): Renders LESS.js files during generation.
+- [LESS.js Generator by Andy Fowler](https://gist.github.com/642739): Renders
+LESS.js files during generation.
 - [Version Reporter by Blake Smith](https://gist.github.com/449491): Creates a version.html file containing the Jekyll version.
 - [Sitemap.xml Generator by Michael Levin](https://github.com/kinnetica/jekyll-plugins): Generates a sitemap.xml file by traversing all of the available posts and pages.
 - [Full-text search by Pascal Widdershoven](https://github.com/PascalW/jekyll_indextank): Adds full-text search to your Jekyll site with a plugin and a bit of JavaScript.
@@ -493,12 +714,17 @@ You can find a few useful plugins at the following locations:
 - [Pages Directory by Ben Baker-Smith](https://github.com/bbakersmith/jekyll-pages-directory): Defines a `_pages` directory for page files which routes its output relative to the project root.
 - [Page Collections by Jeff Kolesky](https://github.com/jeffkole/jekyll-page-collections): Generates collections of pages with functionality that resembles posts.
 - [Windows 8.1 Live Tile Generation by Matt Sheehan](https://github.com/sheehamj13/jekyll-live-tiles): Generates Internet Explorer 11 config.xml file and Tile Templates for pinning your site to Windows 8.1.
+- [Typescript Generator by Matt Sheehan](https://github.com/sheehamj13/jekyll_ts): Generate Javascript on build from your Typescript.
 - [Jekyll::AutolinkEmail by Ivan Tse](https://github.com/ivantsepp/jekyll-autolink_email): Autolink your emails.
 - [Jekyll::GitMetadata by Ivan Tse](https://github.com/ivantsepp/jekyll-git_metadata): Expose Git metadata for your templates.
 - [Jekyll Http Basic Auth Plugin](https://gist.github.com/snrbrnjna/422a4b7e017192c284b3): Plugin to manage http basic auth for jekyll generated pages and directories.
+- [Jekyll Auto Image by Merlos](https://github.com/merlos/jekyll-auto-image): Gets the first image of a post. Useful to list your posts with images or to add [twitter cards](https://dev.twitter.com/cards/overview) to your site.
+- [Jekyll Portfolio Generator by Shannon Babincsak](https://github.com/codeinpink/jekyll-portfolio-generator): Generates project pages and computes related projects out of project data files.
+- [Jekyll-Umlauts by Arne Gockeln](https://github.com/webchef/jekyll-umlauts): This generator replaces all german umlauts (äöüß) case sensitive with html.
 
 #### Converters
 
+- [Textile converter](https://github.com/jekyll/jekyll-textile-converter): Convert `.textile` files into HTML. Also includes the `textilize` Liquid filter.
 - [Slim plugin](https://github.com/slim-template/jekyll-slim): Slim converter and includes for Jekyll with support for Liquid tags.
 - [Jade plugin by John Papandriopoulos](https://github.com/snappylabs/jade-jekyll-plugin): Jade converter for Jekyll.
 - [HAML plugin by Sam Z](https://gist.github.com/517556): HAML converter for Jekyll.
@@ -517,6 +743,8 @@ You can find a few useful plugins at the following locations:
 - [Org-mode Converter](https://gist.github.com/abhiyerra/7377603): Org-mode converter for Jekyll.
 - [Customized Kramdown Converter](https://github.com/mvdbos/kramdown-with-pygments): Enable Pygments syntax highlighting for Kramdown-parsed fenced code blocks.
 - [Bigfootnotes Plugin](https://github.com/TheFox/jekyll-bigfootnotes): Enables big footnotes for Kramdown.
+- [AsciiDoc Plugin](https://github.com/asciidoctor/jekyll-asciidoc): AsciiDoc convertor for Jekyll using [Asciidoctor](http://asciidoctor.org/).
+- [Lazy Tweet Embedding](https://github.com/takuti/jekyll-lazy-tweet-embedding): Automatically convert tweet urls into twitter cards.
 
 #### Filters
 
@@ -527,13 +755,16 @@ You can find a few useful plugins at the following locations:
 - [Smilify](https://github.com/SaswatPadhi/jekyll_smilify) by [SaswatPadhi](https://github.com/SaswatPadhi): Convert text emoticons in your content to themeable smiley pics.
 - [Read in X Minutes](https://gist.github.com/zachleat/5792681) by [zachleat](https://github.com/zachleat): Estimates the reading time of a string (for blog post content).
 - [Jekyll-timeago](https://github.com/markets/jekyll-timeago): Converts a time value to the time ago in words.
-- [pluralize](https://github.com/bdesham/pluralize): Easily combine a number and a word into a gramatically-correct amount like “1 minute” or “2 minute**s**”.
+- [pluralize](https://github.com/bdesham/pluralize): Easily combine a number and a word into a grammatically-correct amount like “1 minute” or “2 minute**s**”.
 - [reading_time](https://github.com/bdesham/reading_time): Count words and estimate reading time for a piece of text, ignoring HTML elements that are unlikely to contain running text.
 - [Table of Content Generator](https://github.com/dafi/jekyll-toc-generator): Generate the HTML code containing a table of content (TOC), the TOC can be customized in many way, for example you can decide which pages can be without TOC.
 - [jekyll-humanize](https://github.com/23maverick23/jekyll-humanize): This is a port of the Django app humanize which adds a "human touch" to data. Each method represents a Fluid type filter that can be used in your Jekyll site templates. Given that Jekyll produces static sites, some of the original methods do not make logical sense to port (e.g. naturaltime).
 - [Jekyll-Ordinal](https://github.com/PatrickC8t/Jekyll-Ordinal): Jekyll liquid filter to output a date ordinal such as "st", "nd", "rd", or "th".
 - [Deprecated articles keeper](https://github.com/kzykbys/JekyllPlugins) by [Kazuya Kobayashi](http://blog.kazuya.co/): A simple Jekyll filter which monitor how old an article is.
 - [Jekyll-jalali](https://github.com/mehdisadeghi/jekyll-jalali) by [Mehdi Sadeghi](http://mehdix.ir): A simple Gregorian to Jalali date converter filter.
+- [Jekyll Thumbnail Filter](https://github.com/matallo/jekyll-thumbnail-filter): Related posts thumbnail filter.
+- [Jekyll-Smartify](https://github.com/pathawks/jekyll-smartify): SmartyPants filter. Make &quot;quotes&quot; &ldquo;curly&rdquo;
+- [liquid-md5](https://github.com/pathawks/liquid-md5): Returns an MD5 hash. Helpful for generating Gravatars in templates.
 
 #### Tags
 
@@ -560,12 +791,12 @@ You can find a few useful plugins at the following locations:
 - [Jekyll-citation](https://github.com/archome/jekyll-citation): Render BibTeX-formatted bibliographies/citations included in posts and pages (pure Ruby).
 - [Jekyll Dribbble Set Tag](https://github.com/ericdfields/Jekyll-Dribbble-Set-Tag): Builds Dribbble image galleries from any user.
 - [Debbugs](https://gist.github.com/2218470): Allows posting links to Debian BTS easily.
-- [Refheap_tag](https://github.com/aburdette/refheap_tag): Liquid tag that allows embedding pastes from [refheap](https://refheap.com).
+- [Refheap_tag](https://github.com/aburdette/refheap_tag): Liquid tag that allows embedding pastes from [refheap](https://www.refheap.com/).
 - [Jekyll-devonly_tag](https://gist.github.com/2403522): A block tag for including markup only during development.
 - [JekyllGalleryTag](https://github.com/redwallhp/JekyllGalleryTag) by [redwallhp](https://github.com/redwallhp): Generates thumbnails from a directory of images and displays them in a grid.
 - [Youku and Tudou Embed](https://gist.github.com/Yexiaoxing/5891929): Liquid plugin for embedding Youku and Tudou videos.
 - [Jekyll-swfobject](https://github.com/sectore/jekyll-swfobject): Liquid plugin for embedding Adobe Flash files (.swf) using [SWFObject](http://code.google.com/p/swfobject/).
-- [Jekyll Picture Tag](https://github.com/robwierzbowski/jekyll-picture-tag): Easy responsive images for Jekyll. Based on the proposed [`<picture>`](http://picture.responsiveimages.org/) element, polyfilled with Scott Jehl’s [Picturefill](https://github.com/scottjehl/picturefill).
+- [Jekyll Picture Tag](https://github.com/robwierzbowski/jekyll-picture-tag): Easy responsive images for Jekyll. Based on the proposed [`<picture>`](https://html.spec.whatwg.org/multipage/embedded-content.html#the-picture-element) element, polyfilled with Scott Jehl’s [Picturefill](https://github.com/scottjehl/picturefill).
 - [Jekyll Image Tag](https://github.com/robwierzbowski/jekyll-image-tag): Better images for Jekyll. Save image presets, generate resized images, and add classes, alt text, and other attributes.
 - [Ditaa Tag](https://github.com/matze/jekyll-ditaa) by [matze](https://github.com/matze): Renders ASCII diagram art into PNG images and inserts a figure tag.
 - [Jekyll Suggested Tweet](https://github.com/davidensinger/jekyll-suggested-tweet) by [David Ensinger](https://github.com/davidensinger/): A Liquid tag for Jekyll that allows for the embedding of suggested tweets via Twitter’s Web Intents API.
@@ -579,21 +810,26 @@ You can find a few useful plugins at the following locations:
 - [Jekyll Github Sample Tag](https://github.com/bwillis/jekyll-github-sample): A liquid tag to include a sample of a github repo file in your Jekyll site.
 - [Jekyll Project Version Tag](https://github.com/rob-murray/jekyll-version-plugin): A Liquid tag plugin that renders a version identifier for your Jekyll site sourced from the git repository containing your code.
 - [Piwigo Gallery](https://github.com/AlessandroLorenzi/piwigo_gallery) by [Alessandro Lorenzi](http://www.alorenzi.eu/): Jekyll plugin to generate thumbnails from a Piwigo gallery and display them with a Liquid tag
-- [mathml.rb](https://github.com/tmthrgd/jekyll-plugins) by [Tom Thorogood](http://tomthorogood.co.uk/): A plugin to convert TeX mathematics into MathML for display.
+- [mathml.rb](https://github.com/tmthrgd/jekyll-plugins) by Tom Thorogood: A plugin to convert TeX mathematics into MathML for display.
 - [webmention_io.rb](https://github.com/aarongustafson/jekyll-webmention_io) by [Aaron Gustafson](http://aaron-gustafson.com/): A plugin to enable [webmention](http://indiewebcamp.com/webmention) integration using [Webmention.io](http://webmention.io). Includes an optional JavaScript for updating webmentions automatically between publishes and, if available, in realtime using WebSockets.
-- [Jekyll 500px Embed](https://github.com/lkorth/jekyll-500px-embed) by [Luke Korth](https://lukekorth.com/). A Liquid tag plugin that embeds [500px](https://500px.com/) photos.
+- [Jekyll 500px Embed](https://github.com/lkorth/jekyll-500px-embed) by Luke Korth. A Liquid tag plugin that embeds [500px](https://500px.com/) photos.
 - [inline\_highlight](https://github.com/bdesham/inline_highlight): A tag for inline syntax highlighting.
 - [jekyll-mermaid](https://github.com/jasonbellamy/jekyll-mermaid): Simplify the creation of mermaid diagrams and flowcharts in your posts and pages.
+- [twa](https://github.com/Ezmyrelda/twa): Twemoji Awesome plugin for Jekyll. Liquid tag allowing you to use twitter emoji in your jekyll pages.
+- [jekyll-files](https://github.com/x43x61x69/jekyll-files) by [Zhi-Wei Cai](http://vox.vg/): Output relative path strings and other info regarding specific assets.
+- [Fetch remote file content](https://github.com/dimitri-koenig/jekyll-plugins) by [Dimitri König](https://www.dimitrikoenig.net/): Using `remote_file_content` tag you can fetch the content of a remote file and include it as if you would put the content right into your markdown file yourself. Very useful for including code from github repo's to always have a current repo version.
+- [jekyll-asciinema](https://github.com/mnuessler/jekyll-asciinema): A tag for embedding asciicasts recorded with [asciinema](https://asciinema.org) in your Jekyll pages.
+- [Jekyll-Youtube](https://github.com/dommmel/jekyll-youtube)  A Liquid tag that embeds Youtube videos. The default emded markup is responsive but you can also specify your own by using an include/partial.
 
 #### Collections
 
-- [Jekyll Plugins by Recursive Design](http://recursive-design.com/projects/jekyll-plugins/): Plugins to generate Project pages from GitHub readmes, a Category page, and a Sitemap generator.
+- [Jekyll Plugins by Recursive Design](https://github.com/recurser/jekyll-plugins): Plugins to generate Project pages from GitHub readmes, a Category page, and a Sitemap generator.
 - [Company website and blog plugins](https://github.com/flatterline/jekyll-plugins) by Flatterline, a [Ruby on Rails development company](http://flatterline.com/): Portfolio/project page generator, team/individual page generator, an author bio liquid tag for use on posts, and a few other smaller plugins.
 - [Jekyll plugins by Aucor](https://github.com/aucor/jekyll-plugins): Plugins for trimming unwanted newlines/whitespace and sorting pages by weight attribute.
 
 #### Other
 
-- [ditaa-ditaa](https://github.com/tmthrgd/ditaa-ditaa) by [Tom Thorogood](http://tomthorogood.co.uk/): a drastic revision of jekyll-ditaa that renders diagrams drawn using ASCII art into PNG images.
+- [ditaa-ditaa](https://github.com/tmthrgd/ditaa-ditaa) by Tom Thorogood: a drastic revision of jekyll-ditaa that renders diagrams drawn using ASCII art into PNG images.
 - [Pygments Cache Path by Raimonds Simanovskis](https://github.com/rsim/blog.rayapps.com/blob/master/_plugins/pygments_cache_patch.rb): Plugin to cache syntax-highlighted code from Pygments.
 - [Draft/Publish Plugin by Michael Ivey](https://gist.github.com/49630): Save posts as drafts.
 - [Growl Notification Generator by Tate Johnson](https://gist.github.com/490101): Send Jekyll notifications to Growl.
@@ -614,13 +850,15 @@ You can find a few useful plugins at the following locations:
 - [generator-jekyllrb](https://github.com/robwierzbowski/generator-jekyllrb): A generator that wraps Jekyll in [Yeoman](http://yeoman.io/), a tool collection and workflow for builing modern web apps.
 - [grunt-jekyll](https://github.com/dannygarcia/grunt-jekyll): A straightforward [Grunt](http://gruntjs.com/) plugin for Jekyll.
 - [jekyll-postfiles](https://github.com/indirect/jekyll-postfiles): Add `_postfiles` directory and {% raw %}`{{ postfile }}`{% endraw %} tag so the files a post refers to will always be right there inside your repo.
-- [A layout that compresses HTML](https://github.com/penibelst/jekyll-compress-html) by [Anatol Broder](http://penibelst.de/): Github Pages compatible, configurable way to compress HTML files on site build.
+- [A layout that compresses HTML](http://jch.penibelst.de/): Github Pages compatible, configurable way to compress HTML files on site build.
 - [Jekyll CO₂](https://github.com/wdenton/jekyll-co2): Generates HTML showing the monthly change in atmospheric CO₂ at the Mauna Loa observatory in Hawaii.
 - [remote-include](http://www.northfieldx.co.uk/remote-include/): Includes files using remote URLs
+- [jekyll-minifier](https://github.com/digitalsparky/jekyll-minifier): Minifies HTML, XML, CSS, and Javascript both inline and as separate files utilising yui-compressor and htmlcompressor.
+- [Jekyll views router](https://bitbucket.org/nyufac/jekyll-views-router): Simple router between generator plugins and templates. 
 
 #### Editors
 
-- [sublime-jekyll](https://github.com/23maverick23/sublime-jekyll): A Sublime Text package for Jekyll static sites. This package should help creating Jekyll sites and posts easier by providing access to key template tags and filters, as well as common completions and a current date/datetime command (for dating posts). You can install this package manually via GitHub, or via [Package Control](https://sublime.wbond.net/packages/Jekyll).
+- [sublime-jekyll](https://github.com/23maverick23/sublime-jekyll): A Sublime Text package for Jekyll static sites. This package should help creating Jekyll sites and posts easier by providing access to key template tags and filters, as well as common completions and a current date/datetime command (for dating posts). You can install this package manually via GitHub, or via [Package Control](https://packagecontrol.io/packages/Jekyll).
 - [vim-jekyll](https://github.com/parkr/vim-jekyll): A vim plugin to generate
   new posts and run `jekyll build` all without leaving vim.
 - [markdown-writer](https://atom.io/packages/markdown-writer): An Atom package for Jekyll. It can create new posts/drafts, manage tags/categories, insert link/images and add many useful key mappings.

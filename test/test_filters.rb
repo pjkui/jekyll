@@ -2,7 +2,7 @@
 
 require 'helper'
 
-class TestFilters < Test::Unit::TestCase
+class TestFilters < JekyllUnitTest
   class JekyllFilter
     include Jekyll::Filters
     attr_accessor :site, :context
@@ -17,6 +17,7 @@ class TestFilters < Test::Unit::TestCase
     setup do
       @filter = JekyllFilter.new({"source" => source_dir, "destination" => dest_dir, "timezone" => "UTC"})
       @sample_time = Time.utc(2013, 03, 27, 11, 22, 33)
+      @sample_date = Date.parse("2013-03-27")
       @time_as_string = "September 11, 2001 12:46:30 -0000"
       @time_as_numeric = 1399680607
       @array_of_objects = [
@@ -24,10 +25,6 @@ class TestFilters < Test::Unit::TestCase
         { "color" => "red",  "size" => "medium" },
         { "color" => "blue", "size" => "medium" }
       ]
-    end
-
-    should "textilize with simple string" do
-      assert_equal "<p>something <strong>really</strong> simple</p>", @filter.textilize("something *really* simple")
     end
 
     should "markdownify with simple string" do
@@ -72,11 +69,29 @@ class TestFilters < Test::Unit::TestCase
         end
 
         should "format a time with xmlschema" do
-          assert_equal "2013-03-27T11:22:33Z", @filter.date_to_xmlschema(@sample_time)
+          assert_equal "2013-03-27T11:22:33+00:00", @filter.date_to_xmlschema(@sample_time)
         end
 
         should "format a time according to RFC-822" do
-          assert_equal "Wed, 27 Mar 2013 11:22:33 -0000", @filter.date_to_rfc822(@sample_time)
+          assert_equal "Wed, 27 Mar 2013 11:22:33 +0000", @filter.date_to_rfc822(@sample_time)
+        end
+      end
+
+      context "with Date object" do
+        should "format a date with short format" do
+          assert_equal "27 Mar 2013", @filter.date_to_string(@sample_date)
+        end
+
+        should "format a date with long format" do
+          assert_equal "27 March 2013", @filter.date_to_long_string(@sample_date)
+        end
+
+        should "format a time with xmlschema" do
+          assert_equal "2013-03-27T00:00:00+00:00", @filter.date_to_xmlschema(@sample_date)
+        end
+
+        should "format a time according to RFC-822" do
+          assert_equal "Wed, 27 Mar 2013 00:00:00 +0000", @filter.date_to_rfc822(@sample_date)
         end
       end
 
@@ -90,11 +105,11 @@ class TestFilters < Test::Unit::TestCase
         end
 
         should "format a time with xmlschema" do
-          assert_equal "2001-09-11T12:46:30Z", @filter.date_to_xmlschema(@time_as_string)
+          assert_equal "2001-09-11T12:46:30+00:00", @filter.date_to_xmlschema(@time_as_string)
         end
 
         should "format a time according to RFC-822" do
-          assert_equal "Tue, 11 Sep 2001 12:46:30 -0000", @filter.date_to_rfc822(@time_as_string)
+          assert_equal "Tue, 11 Sep 2001 12:46:30 +0000", @filter.date_to_rfc822(@time_as_string)
         end
       end
 
@@ -262,9 +277,32 @@ class TestFilters < Test::Unit::TestCase
       should "filter objects appropriately" do
         assert_equal 2, @filter.where(@array_of_objects, "color", "red").length
       end
+
+      should "stringify during comparison for compatibility with liquid parsing" do
+        hash = {
+          "The Words" => {"rating" => 1.2, "featured" => false},
+          "Limitless" => {"rating" => 9.2, "featured" => true},
+          "Hustle"    => {"rating" => 4.7, "featured" => true},
+        }
+
+        results = @filter.where(hash, "featured", "true")
+        assert_equal 2, results.length
+        assert_equal 9.2, results[0]["rating"]
+        assert_equal 4.7, results[1]["rating"]
+
+        results = @filter.where(hash, "rating", 4.7)
+        assert_equal 1, results.length
+        assert_equal 4.7, results[0]["rating"]
+      end
     end
 
     context "sort filter" do
+      should "raise Exception when input is nil" do
+        err = assert_raises ArgumentError do
+          @filter.sort(nil)
+        end
+        assert_equal "Cannot sort a null object.", err.message
+      end
       should "return sorted numbers" do
         assert_equal [1, 2, 2.2, 3], @filter.sort([3, 2.2, 2, 1])
       end
@@ -303,6 +341,10 @@ class TestFilters < Test::Unit::TestCase
     context "slugify filter" do
       should "return a slugified string" do
         assert_equal "q-bert-says", @filter.slugify(" Q*bert says @!#?@!")
+      end
+
+      should "return a slugified string with mode" do
+        assert_equal "q-bert-says-@!-@!", @filter.slugify(" Q*bert says @!#?@!", "pretty")
       end
     end
 

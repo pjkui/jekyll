@@ -1,20 +1,18 @@
 require 'helper'
 
-class TestGeneratedSite < Test::Unit::TestCase
+class TestGeneratedSite < JekyllUnitTest
   context "generated sites" do
     setup do
       clear_dest
-      stub(Jekyll).configuration do
-        Jekyll::Configuration::DEFAULTS.merge({'source' => source_dir, 'destination' => dest_dir})
-      end
+      config = Jekyll::Configuration::DEFAULTS.merge({'source' => source_dir, 'destination' => dest_dir})
 
-      @site = Site.new(Jekyll.configuration)
+      @site = fixture_site config
       @site.process
       @index = File.read(dest_dir('index.html'))
     end
 
     should "ensure post count is as expected" do
-      assert_equal 44, @site.posts.size
+      assert_equal 48, @site.posts.size
     end
 
     should "insert site.posts into the index" do
@@ -46,11 +44,12 @@ class TestGeneratedSite < Test::Unit::TestCase
     end
 
     should "print a nice list of static files" do
+      time_regexp = "\\d+:\\d+"
       expected_output = Regexp.new <<-OUTPUT
-- /css/screen.css last edited at \\d+ with extname .css
-- /pgp.key last edited at \\d+ with extname .key
-- /products.yml last edited at \\d+ with extname .yml
-- /symlink-test/symlinked-dir/screen.css last edited at \\d+ with extname .css
+- /css/screen.css last edited at #{time_regexp} with extname .css
+- /pgp.key last edited at #{time_regexp} with extname .key
+- /products.yml last edited at #{time_regexp} with extname .yml
+- /symlink-test/symlinked-dir/screen.css last edited at #{time_regexp} with extname .css
 OUTPUT
       assert_match expected_output, File.read(dest_dir('static_files.html'))
     end
@@ -59,11 +58,8 @@ OUTPUT
   context "generating limited posts" do
     setup do
       clear_dest
-      stub(Jekyll).configuration do
-        Jekyll::Configuration::DEFAULTS.merge({'source' => source_dir, 'destination' => dest_dir, 'limit_posts' => 5})
-      end
-
-      @site = Site.new(Jekyll.configuration)
+      config = Jekyll::Configuration::DEFAULTS.merge({'source' => source_dir, 'destination' => dest_dir, 'limit_posts' => 5})
+      @site = fixture_site config
       @site.process
       @index = File.read(dest_dir('index.html'))
     end
@@ -73,25 +69,19 @@ OUTPUT
     end
 
     should "ensure limit posts is 0 or more" do
-      assert_raise ArgumentError do
+      assert_raises ArgumentError do
         clear_dest
-        stub(Jekyll).configuration do
-          Jekyll::Configuration::DEFAULTS.merge({'source' => source_dir, 'destination' => dest_dir, 'limit_posts' => -1})
-        end
+        config = Jekyll::Configuration::DEFAULTS.merge({'source' => source_dir, 'destination' => dest_dir, 'limit_posts' => -1})
 
-        @site = Site.new(Jekyll.configuration)
+        @site = fixture_site config
       end
     end
 
     should "acceptable limit post is 0" do
-      assert_nothing_raised ArgumentError do
-        clear_dest
-        stub(Jekyll).configuration do
-          Jekyll::Configuration::DEFAULTS.merge({'source' => source_dir, 'destination' => dest_dir, 'limit_posts' => 0})
-        end
+      clear_dest
+      config = Jekyll::Configuration::DEFAULTS.merge({'source' => source_dir, 'destination' => dest_dir, 'limit_posts' => 0})
 
-        @site = Site.new(Jekyll.configuration)
-      end
+      assert Site.new(config), "Couldn't create a site with the given limit_posts."
     end
   end
 end

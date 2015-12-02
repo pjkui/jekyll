@@ -4,8 +4,9 @@ module Jekyll
   class Document
     include Comparable
 
-    attr_reader   :path, :site, :extname
-    attr_accessor :content, :collection, :output
+    attr_reader :path, :site, :extname, :output_ext, :content, :output, :collection
+
+    YAML_FRONT_MATTER_REGEXP = /\A(---\s*\n.*?\n?)^((---|\.\.\.)\s*$\n?)/m
 
     # Create a new Document.
     #
@@ -17,8 +18,19 @@ module Jekyll
       @site = relations[:site]
       @path = path
       @extname = File.extname(path)
+      @output_ext = Jekyll::Renderer.new(site, self).output_ext
       @collection = relations[:collection]
       @has_yaml_header = nil
+    end
+
+    def output=(output)
+      @to_liquid = nil
+      @output = output
+    end
+
+    def content=(content)
+      @to_liquid = nil
+      @content = content
     end
 
     # Fetch the Document's data.
@@ -128,9 +140,9 @@ module Jekyll
       {
         collection: collection.label,
         path:       cleaned_relative_path,
-        output_ext: Jekyll::Renderer.new(site, self).output_ext,
+        output_ext: output_ext,
         name:       Utils.slugify(basename_without_ext),
-        title:      Utils.slugify(data['title']) || Utils.slugify(basename_without_ext)
+        title:      Utils.slugify(data['slug']) || Utils.slugify(basename_without_ext)
       }
     end
 
@@ -160,8 +172,9 @@ module Jekyll
     # Returns the full path to the output file of this document.
     def destination(base_directory)
       dest = site.in_dest_dir(base_directory)
-      path = site.in_dest_dir(dest, url)
-      path = File.join(path, "index.html") if url =~ /\/$/
+      path = site.in_dest_dir(dest, URL.unescape_path(url))
+      path = File.join(path, "index.html") if url.end_with?("/")
+      path << output_ext unless path.end_with?(output_ext)
       path
     end
 
@@ -176,6 +189,8 @@ module Jekyll
       File.open(path, 'wb') do |f|
         f.write(output)
       end
+
+      Jekyll::Hooks.trigger :document, :post_write, self
     end
 
     # Returns merged option hash for File.read of self.site (if exists)
@@ -201,6 +216,8 @@ module Jekyll
     #
     # Returns nothing.
     def read(opts = {})
+      @to_liquid = nil
+
       if yaml_file?
         @data = SafeYAML.load_file(path)
       else
@@ -209,9 +226,9 @@ module Jekyll
           unless defaults.empty?
             @data = defaults
           end
-          @content = File.read(path, merged_file_read_opts(opts))
-          if content =~ /\A(---\s*\n.*?\n?)^(---\s*$\n?)/m
-            @content = $POSTMATCH
+          self.content = File.read(path, merged_file_read_opts(opts))
+          if content =~ YAML_FRONT_MATTER_REGEXP
+            self.content = $POSTMATCH
             data_file = SafeYAML.load($1)
             unless data_file.nil?
               @data = Utils.deep_merge_hashes(defaults, data_file)
@@ -229,12 +246,12 @@ module Jekyll
     #
     # Returns a Hash representing this Document's data.
     def to_liquid
-      if data.is_a?(Hash)
+      @to_liquid ||= if data.is_a?(Hash)
         Utils.deep_merge_hashes data, {
           "output"        => output,
           "content"       => content,
-          "path"          => path,
           "relative_path" => relative_path,
+          "path"          => relative_path,
           "url"           => url,
           "collection"    => collection.label
         }
@@ -275,6 +292,5 @@ module Jekyll
     def write?
       collection && collection.write?
     end
-
   end
 end

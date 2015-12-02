@@ -1,8 +1,6 @@
 ---
 layout: docs
 title: Templates
-prev_section: migrations
-next_section: permalinks
 permalink: /docs/templates/
 ---
 
@@ -179,17 +177,6 @@ common tasks easier.
     </tr>
     <tr>
       <td>
-        <p class="name"><strong>Textilize</strong></p>
-        <p>Convert a Textile-formatted string into HTML, formatted via RedCloth</p>
-      </td>
-      <td class="align-center">
-        <p>
-         <code class="filter">{% raw %}{{ page.excerpt | textilize }}{% endraw %}</code>
-        </p>
-      </td>
-    </tr>
-    <tr>
-      <td>
         <p class="name"><strong>Markdownify</strong></p>
         <p>Convert a Markdown-formatted string into HTML.</p>
       </td>
@@ -214,11 +201,20 @@ common tasks easier.
     <tr>
       <td>
         <p class="name"><strong>Slugify</strong></p>
-        <p>Convert a string into a lowercase URL "slug" by replacing every sequence of spaces and non-alphanumeric characters with a hyphen.</p>
+        <p>Convert a string into a lowercase URL "slug". See below for options.</p>
       </td>
       <td class="align-center">
         <p>
-         <code class="filter">{% raw %}{{ page.title | slugify }}{% endraw %}</code>
+         <code class="filter">{% raw %}{{ "The _config.yml file" | slugify }}{% endraw %}</code>
+        </p>
+        <p>
+          <code class="output">the-config-yml-file</code>
+        </p>
+        <p>
+         <code class="filter">{% raw %}{{ "The _config.yml file" | slugify: 'pretty' }}{% endraw %}</code>
+        </p>
+        <p>
+          <code class="output">the-_config.yml-file</code>
         </p>
       </td>
     </tr>
@@ -254,6 +250,16 @@ common tasks easier.
 </table>
 </div>
 
+### Options for the `slugify` filter
+
+The `slugify` filter accepts an option, each specifying what to filter.
+The default is `default`. They are as follows (with what they filter):
+
+- `none`: no characters
+- `raw`: spaces
+- `default`: spaces and non-alphanumeric characters
+- `pretty`: spaces and non-alphanumeric characters except for `._~!$&'()+,;=@`
+
 ## Tags
 
 ### Includes
@@ -280,10 +286,10 @@ root of your source directory. This will embed the contents of
   </p>
 </div>
 
-You can also pass parameters to an include:
+You can also pass parameters to an include. Omit the quotation marks to send a variable's value. Liquid curly brackets should not be used here:
 
 {% highlight ruby %}
-{% raw %}{% include footer.html param="value" %}{% endraw %}
+{% raw %}{% include footer.html param="value" variable-param=page.variable %}{% endraw %}
 {% endhighlight %}
 
 These parameters are available via Liquid in the include:
@@ -303,7 +309,7 @@ You can also choose to include file fragments relative to the current file:
 You won't need to place your included content within the `_includes` directory. Instead,
 the inclusion is specifically relative to the file where the tag is being used. For example,
 if `_posts/2014-09-03-my-file.markdown` uses the `include_relative` tag, the included file
-must be within the `_posts` directory, or one of it's subdirectories. You cannot include
+must be within the `_posts` directory, or one of its subdirectories. You cannot include
 files in other locations.
 
 All the other capabilities of the `include` tag are available to the `include_relative` tag,
@@ -318,9 +324,9 @@ on your system and set `highlighter` to `pygments` in your site's configuration
 file.
 
 Alternatively, you can use [Rouge](https://github.com/jayferd/rouge) to highlight
-your code snippets. It doesn't support as many languages as Pygments does but
-it should fit in most cases and it's written in pure Ruby ; you don't need Python
-on your system!
+your code snippets. It doesn't support as many languages as Pygments, however it
+should suit most use cases. Also, since [Rouge](https://github.com/jayferd/rouge)
+is written in pure Ruby, you don't need Python on your system!
 
 To render a code block with syntax highlighting, surround your code as follows:
 
@@ -399,7 +405,8 @@ You can also use this tag to create a link to a post in Markdown as follows:
 
 ### Gist
 
-Use the `gist` tag to easily embed a GitHub Gist onto your site. This works with public or secret gists:
+Use the `gist` tag to easily embed a GitHub Gist onto your site. This works
+with public or secret gists:
 
 {% highlight text %}
 {% raw %}

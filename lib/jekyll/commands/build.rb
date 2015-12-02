@@ -23,7 +23,8 @@ module Jekyll
         # Build your jekyll site
         # Continuously watch if `watch` is set to true in the config.
         def process(options)
-          Jekyll.logger.log_level = :error if options['quiet']
+          # Adjust verbosity quickly
+          Jekyll.logger.adjust_verbosity(options)
 
           options = configuration_from_options(options)
           site = Jekyll::Site.new(options)
@@ -48,13 +49,16 @@ module Jekyll
         #
         # Returns nothing.
         def build(site, options)
+          t = Time.now
           source      = options['source']
           destination = options['destination']
+          full_build  = options['full_rebuild']
           Jekyll.logger.info "Source:", source
           Jekyll.logger.info "Destination:", destination
+          Jekyll.logger.info "Incremental build:", (full_build ? "disabled" : "enabled")
           Jekyll.logger.info "Generating..."
           process_site(site)
-          Jekyll.logger.info "", "done."
+          Jekyll.logger.info "", "done in #{(Time.now - t).round(3)} seconds."
         end
 
         # Private: Watch for file changes and rebuild the site.
@@ -64,7 +68,7 @@ module Jekyll
         #
         # Returns nothing.
         def watch(site, options)
-          Deprecator.gracefully_require 'jekyll-watch'
+          External.require_with_graceful_fail 'jekyll-watch'
           Jekyll::Watcher.watch(options)
         end
 

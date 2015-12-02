@@ -10,7 +10,7 @@ module Jekyll
     def initialize(post)
       @post = post
       @site = post.site
-      require 'classifier-reborn' if site.lsi
+      Jekyll::External.require_with_graceful_fail('classifier-reborn') if site.lsi
     end
 
     def build
@@ -42,7 +42,7 @@ module Jekyll
     end
 
     def lsi_related_posts
-      self.class.lsi.find_related(post.content, 11) - [post]
+      self.class.lsi.find_related(post, 11)
     end
 
     def most_recent_posts

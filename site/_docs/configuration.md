@@ -1,8 +1,6 @@
 ---
 layout: docs
 title: Configuration
-prev_section: structure
-next_section: frontmatter
 permalink: /docs/configuration/
 ---
 
@@ -155,9 +153,12 @@ class="flag">flags</code> (specified on the command-line) that control them.
   <h5>Destination folders are cleaned on site builds</h5>
   <p>
     The contents of <code>&lt;destination&gt;</code> are automatically
-    cleaned when the site is built. Files or folders that are not
-    created by your site will be removed.  Do not use an important
-    location for <code>&lt;destination&gt;</code>; instead, use it as
+    cleaned, by default, when the site is built. Files or folders that are not
+    created by your site will be removed. Some files could be retained
+    by specifying them within the <code>&lt;keep_files&gt;</code> configuration directive.
+  </p>
+  <p>
+    Do not use an important location for <code>&lt;destination&gt;</code>; instead, use it as
     a staging area and copy files from there to your web server.
   </p>
 </div>
@@ -179,7 +180,7 @@ class="flag">flags</code> (specified on the command-line) that control them.
         <p class="description">Enable auto-regeneration of the site when files are modified.</p>
       </td>
       <td class="align-center">
-        <p><code class="flag">-w, --watch</code></p>
+        <p><code class="flag">-w, --[no-]watch</code></p>
       </td>
     </tr>
     <tr class="setting">
@@ -198,6 +199,15 @@ class="flag">flags</code> (specified on the command-line) that control them.
       </td>
       <td class="align-center">
         <p><code class="flag">--drafts</code></p>
+      </td>
+    </tr>
+    <tr class="setting">
+      <td>
+        <p class="name"><strong>Environment</strong></p>
+        <p class="description">Use a specific environment value in the build.</p>
+      </td>
+      <td class="align-center">
+        <p><code class="flag">JEKYLL_ENV=production</code></p>
       </td>
     </tr>
     <tr class="setting">
@@ -261,6 +271,7 @@ class="flag">flags</code> (specified on the command-line) that control them.
   </tbody>
 </table>
 </div>
+
 
 ### Serve Command Options
 
@@ -338,6 +349,34 @@ before your site is served.
   </p>
 </div>
 
+## Specifying a Jekyll environment at build time
+
+In the build (or serve) arguments, you can specify a Jekyll environment and value. The build will then apply this value in any conditional statements in your content.
+
+For example, suppose you set this conditional statement in your code:
+
+{% highlight liquid %}
+{% raw %}
+{% if jekyll.environment == "production" %}
+   {% include disqus.html %}
+{% endif %}
+{% endraw %}
+{% endhighlight %}
+
+When you build your Jekyll site, the content inside the `if` statement won't be run unless you also specify a `production` environment in the build command, like this:
+
+{% highlight sh %}
+JEKYLL_ENV=production jekyll build
+{% endhighlight %}
+
+Specifying an environment value allows you to make certain content available only within specific environments.
+
+The default value for `JEKYLL_ENV` is `development`. Therefore if you omit `JEKYLL_ENV` from the build arguments, the default value will be `JEKYLL_ENV=development`. Any content inside `{% raw %}{% if jekyll.environment == "development" %}{% endraw %}` tags will automatically appear in the build.
+
+Your environment values can be anything you want (not just `development` or `production`). Some elements you might want to hide in development environments include Disqus comment forms or Google Analytics. Conversely, you might want to expose an "Edit me in GitHub" button in a development environment but not include it in production environments.
+
+By specifying the option in the build command, you avoid having to change values in your configuration files when moving from one environment to another.
+
 ## Front Matter defaults
 
 Using [YAML Front Matter](../frontmatter/) is one way that you can specify configuration in the pages and posts for your site. Setting things like a default layout, or customizing the title, or specifying a more precise date/time for the post can all be added to your page or post front matter.
@@ -387,7 +426,7 @@ defaults:
   -
     scope:
       path: "projects"
-      type: "pages"
+      type: "pages" # previously `page` in Jekyll 2.2.
     values:
       layout: "project" # overrides previous default layout
       author: "Mr. Hyde"
@@ -409,7 +448,7 @@ defaults:
       layout: "default"
 {% endhighlight %}
 
-In this example the `layout` is set to `default` inside the [collection](../collections) with the name `my_collection`.
+In this example the `layout` is set to `default` inside the [collection](../collections/) with the name `my_collection`.
 
 ### Precedence
 
@@ -443,31 +482,34 @@ layout: "foobar"
 The post text goes here...
 {% endhighlight %}
 
-The `projects/foo_project.md` would have the `layout` set to `foobar` instead of `project` and the `author` set to `John Smith` instead of `Mr. Hyde` when the site is built.
+The `projects/foo_project.md` would have the `layout` set to `foobar` instead
+of `project` and the `author` set to `John Smith` instead of `Mr. Hyde` when
+the site is built.
 
 ## Default Configuration
 
-Jekyll runs with the following configuration options by default. Unless
-alternative settings for these options are explicitly specified in the
-configuration file or on the command-line, Jekyll will run using these options.
+Jekyll runs with the following configuration options by default. Alternative
+settings for these options can be explicitly specified in the configuration
+file or on the command-line.
 
 <div class="note warning">
   <h5>There are two unsupported kramdown options</h5>
   <p>
     Please note that both <code>remove_block_html_tags</code> and
-    <code>remove_span_html_tags</code> are currently unsupported in Jekyll due to the
-    fact that they are not included within the kramdown HTML converter.
+    <code>remove_span_html_tags</code> are currently unsupported in Jekyll due
+    to the fact that they are not included within the kramdown HTML converter.
   </p>
 </div>
 
 {% highlight yaml %}
 # Where things are
-source:      .
-destination: ./_site
-plugins:     ./_plugins
-layouts:     ./_layouts
-data_source: ./_data
-collections: null
+source:       .
+destination:  ./_site
+plugins_dir:  ./_plugins
+layouts_dir:  ./_layouts
+data_dir:     ./_data
+includes_dir: ./_includes
+collections:  null
 
 # Handling Reading
 safe:         false
@@ -476,12 +518,11 @@ exclude:      []
 keep_files:   [".git", ".svn"]
 encoding:     "utf-8"
 markdown_ext: "markdown,mkdown,mkdn,mkd,md"
-textile_ext:  "textile"
 
 # Filtering Content
 show_drafts: null
 limit_posts: 0
-future:      true
+future:      false
 unpublished: false
 
 # Plugins
@@ -490,18 +531,15 @@ gems:      []
 
 # Conversion
 markdown:    kramdown
-highlighter: pygments
+highlighter: rouge
 lsi:         false
 excerpt_separator: "\n\n"
 
 # Serving
 detach:  false
 port:    4000
-host:    0.0.0.0
+host:    127.0.0.1
 baseurl: "" # does not include hostname
-
-# Backwards-compatibility
-relative_permalinks: false
 
 # Outputting
 permalink:     date
@@ -512,14 +550,6 @@ quiet:    false
 defaults: []
 
 # Markdown Processors
-maruku:
-  use_tex:    false
-  use_divs:   false
-  png_engine: blahtex
-  png_dir:    images/latex
-  png_url:    /images/latex
-  fenced_code_blocks: true
-
 rdiscount:
   extensions: []
 
@@ -527,12 +557,12 @@ redcarpet:
   extensions: []
 
 kramdown:
-  auto_ids:      true
-  footnote_nr:   1
-  entity_output: as_char
-  toc_levels:    1..6
-  smart_quotes:  lsquo,rsquo,ldquo,rdquo
-  use_coderay:   false
+  auto_ids:       true
+  footnote_nr:    1
+  entity_output:  as_char
+  toc_levels:     1..6
+  smart_quotes:   lsquo,rsquo,ldquo,rdquo
+  enable_coderay: false
 
   coderay:
     coderay_wrap:              div
@@ -541,44 +571,61 @@ kramdown:
     coderay_tab_width:         4
     coderay_bold_every:        10
     coderay_css:               style
-
-redcloth:
-  hard_breaks: true
 {% endhighlight %}
 
 ## Markdown Options
 
-The various Markdown renderers supported by Jekyll sometimes have extra options available.
+The various Markdown renderers supported by Jekyll sometimes have extra options
+available.
 
 ### Redcarpet
 
-Redcarpet can be configured by providing an `extensions` sub-setting, whose value should be an array of strings. Each string should be the name of one of the `Redcarpet::Markdown` class's extensions; if present in the array, it will set the corresponding extension to `true`.
+Redcarpet can be configured by providing an `extensions` sub-setting, whose
+value should be an array of strings. Each string should be the name of one of
+the `Redcarpet::Markdown` class's extensions; if present in the array, it will
+set the corresponding extension to `true`.
 
 Jekyll handles two special Redcarpet extensions:
 
-- `no_fenced_code_blocks` --- By default, Jekyll sets the `fenced_code_blocks` extension (for delimiting code blocks with triple tildes or triple backticks) to `true`, probably because GitHub's eager adoption of them is starting to make them inescapable. Redcarpet's normal `fenced_code_blocks` extension is inert when used with Jekyll; instead, you can use this inverted version of the extension for disabling fenced code.
+- `no_fenced_code_blocks` --- By default, Jekyll sets the `fenced_code_blocks`
+extension (for delimiting code blocks with triple tildes or triple backticks)
+to `true`, probably because GitHub's eager adoption of them is starting to make
+them inescapable. Redcarpet's normal `fenced_code_blocks` extension is inert
+when used with Jekyll; instead, you can use this inverted version of the
+extension for disabling fenced code.
 
-Note that you can also specify a language for highlighting after the first delimiter:
+Note that you can also specify a language for highlighting after the first
+delimiter:
 
         ```ruby
         # ...ruby code
         ```
 
-With both fenced code blocks and highlighter enabled, this will statically highlight the code; without any syntax highlighter, it will add a `class="LANGUAGE"` attribute to the `<code>` element, which can be used as a hint by various JavaScript code highlighting libraries.
+With both fenced code blocks and highlighter enabled, this will statically
+highlight the code; without any syntax highlighter, it will add a
+`class="LANGUAGE"` attribute to the `<code>` element, which can be used as a
+hint by various JavaScript code highlighting libraries.
 
-- `smart` --- This pseudo-extension turns on SmartyPants, which converts straight quotes to curly quotes and runs of hyphens to em (`---`) and en (`--`) dashes.
+- `smart` --- This pseudo-extension turns on SmartyPants, which converts
+  straight quotes to curly quotes and runs of hyphens to em (`---`) and en (`--`) dashes.
 
-All other extensions retain their usual names from Redcarpet, and no renderer options aside from `smart` can be specified in Jekyll. [A list of available extensions can be found in the Redcarpet README file.][redcarpet_extensions] Make sure you're looking at the README for the right version of Redcarpet: Jekyll currently uses v2.2.x, and extensions like `footnotes` and `highlight` weren't added until after version 3.0.0. The most commonly used extensions are:
+All other extensions retain their usual names from Redcarpet, and no renderer
+options aside from `smart` can be specified in Jekyll. [A list of available
+extensions can be found in the Redcarpet README file.][redcarpet_extensions]
+Make sure you're looking at the README for the right version of
+Redcarpet: Jekyll currently uses v3.2.x. The most commonly used
+extensions are:
 
 - `tables`
 - `no_intra_emphasis`
 - `autolink`
 
-[redcarpet_extensions]: https://github.com/vmg/redcarpet/blob/v2.2.2/README.markdown#and-its-like-really-simple-to-use
+[redcarpet_extensions]: https://github.com/vmg/redcarpet/blob/v3.2.2/README.markdown#and-its-like-really-simple-to-use
 
 ### Kramdown
 
-In addition to the defaults mentioned above, you can also turn on recognition of Github Flavored Markdown by passing an `input` option with a value of "GFM".
+In addition to the defaults mentioned above, you can also turn on recognition
+of Github Flavored Markdown by passing an `input` option with a value of "GFM".
 
 For example, in your `_config.yml`:
 
@@ -606,7 +653,8 @@ class Jekyll::Converters::Markdown::MyCustomProcessor
 end
 {% endhighlight %}
 
-Once you've created your class and have it properly setup either as a plugin in the `_plugins` folder or as a gem, specify it in your `_config.yml`:
+Once you've created your class and have it properly setup either as a plugin in
+the `_plugins` folder or as a gem, specify it in your `_config.yml`:
 
 {% highlight yaml %}
 markdown: MyCustomProcessor

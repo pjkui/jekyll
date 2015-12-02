@@ -1,8 +1,6 @@
 ---
 layout: docs
 title: Installation
-prev_section: quickstart
-next_section: usage
 permalink: /docs/installation/
 ---
 
@@ -13,15 +11,16 @@ describing the issue you encountered and how we might make the process easier.
 
 ### Requirements
 
-Installing Jekyll is easy and straight-forward, but there are a few requirements
-you’ll need to make sure your system has before you start.
+Installing Jekyll is easy and straight-forward, but there are a few
+requirements you’ll need to make sure your system has before you start.
 
 - [Ruby](http://www.ruby-lang.org/en/downloads/) (including development
-  headers)
+  headers, v1.9.3 or above for Jekyll 2 and v2 or above for Jekyll 3)
 - [RubyGems](http://rubygems.org/pages/download)
 - Linux, Unix, or Mac OS X
-- [NodeJS](http://nodejs.org), or another JavaScript runtime (for
-  CoffeeScript support).
+- [NodeJS](http://nodejs.org), or another JavaScript runtime (Jekyll 2 and
+earlier, for CoffeeScript support).
+- [Python 2.7](https://www.python.org/downloads/) (for Jekyll 2 and earlier)
 
 <div class="note info">
   <h5>Running Jekyll on Windows</h5>

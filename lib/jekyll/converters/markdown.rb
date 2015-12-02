@@ -13,7 +13,6 @@ module Jekyll
             when 'redcarpet' then RedcarpetParser.new(@config)
             when 'kramdown'  then KramdownParser.new(@config)
             when 'rdiscount' then RDiscountParser.new(@config)
-            when 'maruku'    then MarukuParser.new(@config)
           else
             # So they can't try some tricky bullshit or go down the ancestor chain, I hope.
             if allowed_custom_class?(@config['markdown'])
@@ -29,7 +28,6 @@ module Jekyll
 
       def valid_processors
         %w[
-          maruku
           rdiscount
           kramdown
           redcarpet
@@ -39,22 +37,18 @@ module Jekyll
       def third_party_processors
         self.class.constants - %w[
           KramdownParser
-          MarukuParser
           RDiscountParser
           RedcarpetParser
           PRIORITIES
         ].map(&:to_sym)
       end
 
-      def extname_matches_regexp
-        @extname_matches_regexp ||= Regexp.new(
-          '^\.(' + @config['markdown_ext'].gsub(',','|') +')$',
-          Regexp::IGNORECASE
-        )
+      def extname_list
+        @extname_list ||= @config['markdown_ext'].split(',').map { |e| ".#{e.downcase}" }
       end
 
       def matches(ext)
-        ext =~ extname_matches_regexp
+        extname_list.include? ext.downcase
       end
 
       def output_ext(ext)
